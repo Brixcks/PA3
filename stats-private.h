@@ -9,3 +9,7 @@
  * THIS FILE WILL BE SUBMITTED
 **/
 
+#include "stats.h"
+
+int64_t sumUp(vector<vector<int64_t>> outer, pair<int, int> ul, int w, int h);
+void setupVectors(PNG& img);
