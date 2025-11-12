@@ -9,32 +9,41 @@
 #include "stats.h"
 
 Stats::Stats(PNG& im) {
-    //maybe set up a local variable for the image for easy access
-    //setup sum and sumsq vectors for all channels using GetSum and GetSumSq
+    //setup sum and sumsq vectors for all channels
 }
 
-
+//take the bottom right corner of the rectangle at coordinates
+//(x + w-1, y + h-1) and subtract areas as necessary
+//if x and y are 0, do nothing
+//if x is greater than 0, subtract (x-1, y)
+//if y is greater than 0, subtract (x, y-1)
+//if both are greater than 0, subtract both points and add (x-1, y-1)
+//return the value for the appropriate channel
 int64_t Stats::GetSum(char channel, pair<int, int> ul, int w, int h) {
-    //create a local int64_t variable
-    //repeat the below process depending on the channel
-    //find the proper position for x and y by subtracting the ul x and y from
-    //the current x and y (vector[0] = vector[currx - ulx], etc.)
-    //resize the outer vector to h
-    //loop through y values in the associated sum vector (0 to h - 1)
-        //resize the inner vector to w
-        //loop through x values in the inner vector (0 to w - 1)
-        //add the specified channel value to the local variable 
-        //and place them in the vector
-    //return the local variable
-
-	return 0;
+    //channel selection
+    if (channel == r) {
+        sumUp(sumRed, ul, w, h);
+    } else if (channel == g) {
+        sumUp(sumGreen, ul, w, h);
+    } else if (channel == b) {
+        sumUp(sumBlue, ul, w, h);
+    } else {
+        return 0;
+    }
 }
 
+//same as GetSum but with the sumsq vectors
 int64_t Stats::GetSumSq(char channel, pair<int, int> ul, int w, int h) {
-    //same as GetSum but instead, setting each vector to the squared 
-    //difference between the channel and GetAvg's channel
-    //return the sum of squared differences
-	return 0;
+    //channel selection
+    if (channel == r) {
+        sumUp(sumsqRed, ul, w, h);
+    } else if (channel == g) {
+        sumUp(sumsqGreen, ul, w, h);
+    } else if (channel == b) {
+        sumUp(sumsqBlue, ul, w, h);
+    } else {
+        return 0;
+    }
 }
 
 /**
@@ -50,7 +59,8 @@ double Stats::GetVar(pair<int, int> ul, int w, int h) {
 	return varSum;
 }
 
-
+//divide the sums for each channel by the w x h
+//make a new pixel using the averaged values and return it
 RGBAPixel Stats::GetAvg(pair<int, int> ul, int w, int h) {
     //set sum variables for each channel using GetSum
     int64_t rSum = GetSum(char r, ul, w, h);
@@ -62,7 +72,7 @@ RGBAPixel Stats::GetAvg(pair<int, int> ul, int w, int h) {
     int bavg = (bSum/(w*h));
     //make a new pixel with the averaged channels
     RGBAPixel avg = new RGBAPixel(ravg, gavg, bavg);
-	return RGBAPixel();
+	return avg;
 }
 
 /****************************************************************
@@ -70,3 +80,51 @@ RGBAPixel Stats::GetAvg(pair<int, int> ul, int w, int h) {
 * ADD YOUR IMPLEMENTATIONS BELOW                                *
 ****************************************************************/
 
+//helper for GetSum and GetSumSq
+//outer represents the color channel vector being considered
+//ul is the (x, y) coordinates of the upper-left corner of the rectangle 
+//w and h are the width and height of the rectangle
+int64_t sumUp(vector<vector<int64_t>> outer, pair<int, int> ul, int w, int h) {
+    int x = ul.first;
+    int y = ul.second;
+    //the vector corresponding to the y value of the bottom of the rectangle
+    vector<int64_t> bottom = outer[y + (h - 1)];
+    //the sum of all color values over the area from (0, 0) 
+    //to the bottom right corner of the rectangle
+    int64_t overall = bottom[x + (w - 1)];
+    if ((x == 0) && (y == 0)) {
+        return overall;
+    } else if ((x > 0) && (y == 0)) {
+        //the sum of all color values to the left of the rectangle's area
+        int64_t left = bottom[x - 1];
+        return (overall - left);
+    } else if ((x == 0) && (y > 0)) {
+        //the vector corresponding to y value just above the rectangle
+        vector<int64_t> top = outer[y - 1];
+        //the sum of all color values above the rectangle's area
+        int64_t above = top[x];
+        return (overall - above);
+    } else {
+        //area above the rectangle
+        vector<int64_t> top = outer[y - 1];
+        int64_t above = top[x];
+        //area to the left of the rectangle
+        int64_t left = bottom[x - 1];
+        //area overlapped by the above two
+        int64_t overlap = top[x - 1];
+        return (overall - above - left + overlap);
+    }
+}
+
+
+//sets up the sum and sumsq vectors for each channel
+//works similarly to GetSum when placing values
+void Stats::setupVectors(PNG& img) {
+    //resize vectors such that the outer vector's size is h
+    //resize each inner vector to a size of w
+    //loop through every pixel in the image
+    //y value is the outer vector's index 
+    //x is the inner vector's index
+    //for every pixel/index, run a summation helper function
+    //similar to sumUp
+}
