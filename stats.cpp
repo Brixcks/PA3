@@ -21,11 +21,11 @@ Stats::Stats(PNG& im) {
 //return the value for the appropriate channel
 int64_t Stats::GetSum(char channel, pair<int, int> ul, int w, int h) {
     //channel selection
-    if (channel == r) {
+    if (channel == 'r') {
         sumUp(sumRed, ul, w, h);
-    } else if (channel == g) {
+    } else if (channel == 'g') {
         sumUp(sumGreen, ul, w, h);
-    } else if (channel == b) {
+    } else if (channel == 'b') {
         sumUp(sumBlue, ul, w, h);
     } else {
         return 0;
@@ -35,11 +35,11 @@ int64_t Stats::GetSum(char channel, pair<int, int> ul, int w, int h) {
 //same as GetSum but with the sumsq vectors
 int64_t Stats::GetSumSq(char channel, pair<int, int> ul, int w, int h) {
     //channel selection
-    if (channel == r) {
+    if (channel == 'r') {
         sumUp(sumsqRed, ul, w, h);
-    } else if (channel == g) {
+    } else if (channel == 'g') {
         sumUp(sumsqGreen, ul, w, h);
-    } else if (channel == b) {
+    } else if (channel == 'b') {
         sumUp(sumsqBlue, ul, w, h);
     } else {
         return 0;
@@ -52,11 +52,10 @@ int64_t Stats::GetSumSq(char channel, pair<int, int> ul, int w, int h) {
 **/
 double Stats::GetVar(pair<int, int> ul, int w, int h) {
     //return the sum of GetSumSq from each channel
-    int64_t rSq = GetSumSq(char r, ul, w, h);
-    int64_t gSq = GetSumSq(char g, ul, w, h);
-    int64_t bSq = GetSumSq(char b, ul, w, h);
-    double varSum = (rSq + gSq + bSq);
-	return varSum;
+    double rVar = varForChannel('r', ul, w, h);
+    double gVar = varForChannel('g', ul, w, h);
+    double bVar = varForChannel('b', ul, w, h);
+	return (rVar + gVar + bVar);
 }
 
 //divide the sums for each channel by the w x h
@@ -114,6 +113,15 @@ int64_t sumUp(vector<vector<int64_t>> outer, pair<int, int> ul, int w, int h) {
         int64_t overlap = top[x - 1];
         return (overall - above - left + overlap);
     }
+}
+
+//helper for GetVar
+//computes the variance over the whole rectangle for the given channel
+double varForChannel(char channel, pair<int, int> ul, int w, int h) {
+    double result;
+    int64_t i = GetSum(channel, ul, w, h);
+    int64_t Sq = GetSumSq(channel, ul, w, h);
+    return (Sq - ((i*i)/(w*h)));
 }
 
 //helper for setting up vectors that adds the next value
