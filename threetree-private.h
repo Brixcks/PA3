@@ -11,7 +11,9 @@
 #include "threetree.h"
 
 int split(int i);
+void Render(PNG& img, const Node* n) const;
 void clearAll(Node* victim);
 void copyAll(Node* curr, Node* other);
-int Size(Node* n);
-int NumLeaves(Node* n);
+int Size(const Node* n) const;
+int NumLeaves(const Node* n) const;
+void rotateNodes(Node* n, pair<int, int> ul, int w, int h);
