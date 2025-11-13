@@ -12,4 +12,6 @@
 #include "stats.h"
 
 int64_t sumUp(vector<vector<int64_t>> outer, pair<int, int> ul, int w, int h);
+void setNextSum(vector<vector<int64_t>> v, int x, int y, int rgb);
+void resizeVector(vector<vector<int64_t>> v, int w, int h);
 void setupVectors(PNG& img);
