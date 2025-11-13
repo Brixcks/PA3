@@ -24,30 +24,63 @@ ThreeTree::ThreeTree(PNG& imIn, double tol) {
 **/
 Node* ThreeTree::BuildTree(Stats& s, pair<int, int> ul, int w, int h, double tol) {
     /* Replace the line below with your implementation */
-    //make the root a new node with all the given parameters
-
-    //pass root node to a recursive helper that does the following
-        //split based on above rules to create children
-        //if w and h are not both 1 or the variability of current node isn't <= tol
-            //if height > width then split tall
-            //if width <= height then split wide
-            //if the larger side is > 2 then split accordingly
-                //for splitting, take the taller side and use mod 3
-                //if mod 3 = 0 then uls for each child is (0/1/2) * (side - 1)/3 with w and h being the same
-                //if mod 3 = 1 then ul for b is (side - 1)/3 and for c is 2((side - 1)/3) + 1 with b being 1 larger than a and c
-                //if mode3 = 2 then ul for b is (side - 1)/3 + 1 and c is 2(side - 1)/3 + 1 with a and c being 1 larger than b
-            //otherwise, the area is 2 x 2 or 2 x 1 then split down the middle and assign areas to A and C
-        //create new nodes at each point and assign children accordingly
-        //at some point convert nodes with stats into nodes with average and variability
-        //recursivly call the function on each child
-    return nullptr;
+    //make a new node as specified
+    RGBAPixel avg = s.GetAvg(ul, w, h);
+    double var = s.GetVar(ul, w, h);
+    Node* curr = new Node(ul, w, h, avg, var);
+    //set the new node to the root if the root hasn't already been set
+    if (root == NULL) {
+        root == curr;
+    }
+    //check that the node is legal for splitting
+    //node is illegal if it's a single pixel (1 x 1) OR var is <= tol
+    if (!(((w == 1) && (h == 1)) || var <= tol)) {
+        if (w < h) {
+            //split tall
+            if (h >= 3) {
+                //height for a and c
+                int ACVal = split(h);
+                //height for b
+                int BVal = (h - (2*ACVal));
+                //Set current node's children to a recursive 
+                //call BuildTree using each child's stats
+            //dimensions are 1 x 2
+            } else {
+                //Set current node's children to a recursive 
+                //call BuildTree using each child's stats
+                //with B being NULL
+            }
+        //case where w >= h
+        } else {
+            //split wide
+            if (w >= 3) {
+                //width for a and c
+                int ACVal = split(w);
+                //width for b
+                int BVal = (w - (2*ACVal));
+                //Set current node's children to a recursive 
+                //call BuildTree using each child's stats
+            //dimensions are 2 x 1 or 2 x 2
+            } else {
+                //do stuff
+                //Set current node's children to a recursive 
+                //call BuildTree using each child's stats
+                //with B being NULL
+            }
+        }
+    }
+    return curr;
 }
 
 /**
  * Render ThreeTree and return the resulting image.
 **/
 PNG ThreeTree::Render() const {
-    /* Replace the line below with your implementation */
+    //make PNG with width and height of the root/original image
+    unsigned int w = root.width;
+    unsigned int h = root.height;
+    PNG out(w, h);
+    //TODO: pass to a recursive helper to render the tree
     return PNG();
 }
 
@@ -99,14 +132,29 @@ void ThreeTree::RotateCW() {
 * ADD YOUR IMPLEMENTATIONS BELOW                                 *
 *****************************************************************/
 
+//helper function for splitting a node
+//returns the split size for children A and C
+//if i = 3p/3p+1 then it will return p
+//if i = 3p + 2 then it will return p + 1
+int split(int i) {
+    int a = (i % 3);
+    //if the remainer is 0 or 1
+    if (a < 2) {
+        return ((i - a)/3);
+    //if the remainder is 2
+    } else {
+        return (((i - 2)/3) + 1);
+    }
+}
+
 //recursive helper for the clear function
 //deletes nodes in post-order traversal
 //through its non-null children
 void clearAll(Node* victim) {
     if (victim != NULL) {
-        if (victim->A) clearAll(victim->A);
-        if (victim->B) clearAll(victim->B);
-        if (victim->C) clearAll(victim->C);
+        if (victim.A) clearAll(victim.A);
+        if (victim.B) clearAll(victim.B);
+        if (victim.C) clearAll(victim.C);
         delete victim;
         victim = NULL;
     }
@@ -129,17 +177,17 @@ void copyAll(Node* curr, Node* other) {
         //case where copyAll is not called immediately after clearing the tree
         } else {
             //check and add the children
-            if (other->A != NULL) {
-                curr->A = other->A;
-                copyAll(curr->A, other->A);
+            if (other.A != NULL) {
+                curr.A = other.A;
+                copyAll(curr.A, other.A);
             }
-            if (other->B != NULL) {
-                curr->B = other->B;
-                copyAll(curr->B, other->B);
+            if (other.B != NULL) {
+                curr.B = other.B;
+                copyAll(curr.B, other.B);
             }
-            if (other->C != NULL) {
-                curr->C = other->C;
-                copyAll(curr->C, other->C);
+            if (other.C != NULL) {
+                curr.C = other.C;
+                copyAll(curr.C, other.C);
             }
         }
     }
@@ -152,13 +200,13 @@ int Threetree::Size(Node* n) {
     int sizeB = 0;
     int sizeC = 0;
     //if there are no children, return 1
-    if ((n->A == NULL) && (n->B == NULL) && (n->C == NULL)) {
+    if ((n.A == NULL) && (n.B == NULL) && (n.C == NULL)) {
         return 1;
     } else {
         //for every non-null child, set their size to their recursive call
-        if (n->A) sizeA = Size(n->A);
-        if (n->B) sizeB = Size(n->B); 
-        if (n->C) sizeC = Size(n->C); 
+        if (n.A) sizeA = Size(n.A);
+        if (n.B) sizeB = Size(n.B); 
+        if (n.C) sizeC = Size(n.C); 
     }
     return (1 + sizeA + sizeB + sizeC);
 }
@@ -170,13 +218,13 @@ int Threetree::NumLeaves(Node* n) {
     int leavesB = 0;
     int leavesC = 0;
     //if the node is a leaf, return 1
-    if ((n->A == NULL) && (n->B == NULL) && (n->C == NULL)) {
+    if ((n.A == NULL) && (n.B == NULL) && (n.C == NULL)) {
         return 1;
     } else {
         //for every non-null child, count the leaves in their subtrees
-        if (n->A) leavesA = NumLeaves(n->A);
-        if (n->B) leavesB = NumLeaves(n->B); 
-        if (n->C) leavesC = NumLeaves(n->C); 
+        if (n.A) leavesA = NumLeaves(n.A);
+        if (n.B) leavesB = NumLeaves(n.B); 
+        if (n.C) leavesC = NumLeaves(n.C); 
     }
     return (leavesA + leavesB + leavesC);
 }
