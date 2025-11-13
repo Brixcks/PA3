@@ -12,11 +12,11 @@
  * ThreeTree constructor given tolerance for variance.
 **/
 ThreeTree::ThreeTree(PNG& imIn, double tol) {
-    /* Complete your implementation below */
-    //create new stats object for the image
-    //call buildtree with the stats object, imIn.width() - 1, imIn.height() - 1, and tol
-        //ul is a new pair of 0, 0
-    
+    //call buildtree with the stats object, imIn.width(), imIn.height(), and tol
+    //ul is a new pair of 0, 0
+    Stats s = new Stats(imIn);
+    pair<int, int> p(0, 0);
+    BuildTree(s, p, imIn.width(), imIn.height(). tol);
 }
 
 /**
@@ -55,18 +55,16 @@ PNG ThreeTree::Render() const {
  * Delete allocated memory.
 **/
 void ThreeTree::Clear() {
-    /* Complete your implementation below */
-
-    
+    clearAll();
 }
 
 /**
  * Copy other tree into this tree object.
 **/
 void ThreeTree::Copy(const ThreeTree& other) {
-    /* Complete your implementation below */
     //clear the current tree and set the root to the other's root
-    
+    Clear();
+    copyAll(other.root);
 }
 
 /**
@@ -100,6 +98,52 @@ void ThreeTree::RotateCW() {
 * IF YOU HAVE DEFINED ANY PRIVATE FUNCTIONS IN sqtree-private.h, *
 * ADD YOUR IMPLEMENTATIONS BELOW                                 *
 *****************************************************************/
+
+//recursive helper for the clear function
+//deletes nodes in post-order traversal
+//through its non-null children
+void clearAll(Node* victim) {
+    if (victim != NULL) {
+        if (victim->A) clearAll(victim->A);
+        if (victim->B) clearAll(victim->B);
+        if (victim->C) clearAll(victim->C);
+        delete victim;
+        victim = NULL;
+    }
+}
+
+//recursive helper for the copy function
+//curr is the current node considered
+//other is its equivalent node in the other tree
+//sets the root if the root is empty
+//recursivly travels through the other tree
+//adding it's children to the current node
+void copyAll(Node* curr, Node* other) {
+    //set the root if it was deleted/doesn't exist
+    if (other != NULL) {
+        //if the curr is NULL then the root was passed after the tree was cleared
+        if (curr == NULL) {
+            //set root and curr to the other node
+            root = other;
+            curr = other;
+        //case where copyAll is not called immediately after clearing the tree
+        } else {
+            //check and add the children
+            if (other->A != NULL) {
+                curr->A = other->A;
+                copyAll(curr->A, other->A);
+            }
+            if (other->B != NULL) {
+                curr->B = other->B;
+                copyAll(curr->B, other->B);
+            }
+            if (other->C != NULL) {
+                curr->C = other->C;
+                copyAll(curr->C, other->C);
+            }
+        }
+    }
+}
 
 //a recursive helper function for Size
 int Threetree::Size(Node* n) {
