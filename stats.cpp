@@ -9,7 +9,7 @@
 #include "stats.h"
 
 Stats::Stats(PNG& im) {
-    //setup sum and sumsq vectors for all channels
+    setupVectors(im);
 }
 
 //take the bottom right corner of the rectangle at coordinates
@@ -116,15 +116,76 @@ int64_t sumUp(vector<vector<int64_t>> outer, pair<int, int> ul, int w, int h) {
     }
 }
 
+//helper for setting up vectors that adds the next value
+//v is the vector being added to
+//x and y are the x and y coordinates/indices we're adding to
+//rgb is an rgb value being added to our vector
+//works similarly to sumUp except it adds the value to the 
+//index instead of returning it
+void setnextSum(vector<vector<int64_t>> v, int x, int y, int rgb) {
+    //the vector corresponding to the y value of the bottom of the rectangle
+    vector<int64_t> ypos = v[y];
+    //if the pixel is at (0, 0), simply add rgb to the vector
+    if ((x == 0) && (y == 0)) {
+        ypos[x] = rgb;
+    } else if ((x > 0) && (y == 0)) {
+        //the sum of color values to the left of the pixel
+        int64_t left = ypos[x - 1];
+        ypos[x] = (rgb + left);
+    } else if ((x == 0) && (y > 0)) {
+        //the vector corresponding to y value just above the pixel
+        vector<int64_t> top = v[y - 1];
+        //the sum of all color values above the pixel area
+        int64_t above = top[x];
+        ypos[x] = (rgb + above);
+    } else {
+        //area above the pixel
+        vector<int64_t> top = v[y - 1];
+        int64_t above = top[x];
+        //area to the left of the pixel
+        int64_t left = ypos[x - 1];
+        //area overlapped by the above two
+        int64_t overlap = top[x - 1];
+        ypos[x] = (rgb + above + left - overlap);
+    }
+}
+
+//helper for setting up vectors
+//resizes the outer vector v to size h and each inner vector to size w
+void resizeVector(vector<vector<int64_t>> v, int w, int h) {
+    //resize the outer vector to match the height of the image
+    v.resize(h);
+    for (int y = 0; y < h; y++) {
+        //resizing each inner vector to match the width of the image
+        vector<int64_t> inner = v[y];
+        inner.resize(w);
+    }
+}
 
 //sets up the sum and sumsq vectors for each channel
 //works similarly to GetSum when placing values
 void Stats::setupVectors(PNG& img) {
-    //resize vectors such that the outer vector's size is h
-    //resize each inner vector to a size of w
+    //resize each vector to match the image size
+    resizeVector(sumRed, img.width(), img.height());
+    resizeVector(sumGreen, img.width(), img.height());
+    resizeVector(sumBlue, img.width(), img.height());
+    resizeVector(sumsqRed, img.width(), img.height());
+    resizeVector(sumsqGreen, img.width(), img.height());
+    resizeVector(sumSqBlue, img.width(), img.height());
     //loop through every pixel in the image
-    //y value is the outer vector's index 
-    //x is the inner vector's index
-    //for every pixel/index, run a summation helper function
-    //similar to sumUp
+    for (int y = 0; y < img.height(); y++) {
+        for (int x = 0; x < img.width(); x++) {
+            RGBAPixel p = img.getPixel(x, y);
+            int red = p->r;
+            int green = p->g;
+            int blue = p->b;
+            //for every pixel update every list accordingly
+            setNextSum(sumRed, x, y, red);
+            setNextSum(sumGreen, x, y, green);
+            setNextSum(sumBlue, x, y, blue);
+            setNextSum(sumsqRed, x, y, (red*red));
+            setNextSum(sumsqGreen, x, y, (green*green));
+            setNextSum(sumSqBlue, x, y, (blue*blue));
+        }
+    }
 }
