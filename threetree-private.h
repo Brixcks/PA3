@@ -10,5 +10,7 @@
 **/
 #include "threetree.h"
 
+void clearAll(Node* victim);
+void copyAll(Node* curr, Node* other);
 int Size(Node* n);
 int NumLeaves(Node* n);
