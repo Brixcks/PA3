@@ -119,8 +119,8 @@ int64_t sumUp(vector<vector<int64_t>> outer, pair<int, int> ul, int w, int h) {
 //computes the variance over the whole rectangle for the given channel
 double varForChannel(char channel, pair<int, int> ul, int w, int h) {
     double result;
-    int64_t i = GetSum(channel, ul, w, h);
-    int64_t Sq = GetSumSq(channel, ul, w, h);
+    double i = GetSum(channel, ul, w, h);
+    double Sq = GetSumSq(channel, ul, w, h);
     return (Sq - ((i*i)/(w*h)));
 }
 
