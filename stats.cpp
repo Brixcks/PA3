@@ -21,29 +21,33 @@ Stats::Stats(PNG& im) {
 //return the value for the appropriate channel
 int64_t Stats::GetSum(char channel, pair<int, int> ul, int w, int h) {
     //channel selection
+    int64_t result;
     if (channel == 'r') {
-        sumUp(sumRed, ul, w, h);
+        result = sumUp(sumRed, ul, w, h);
     } else if (channel == 'g') {
-        sumUp(sumGreen, ul, w, h);
+        result = sumUp(sumGreen, ul, w, h);
     } else if (channel == 'b') {
-        sumUp(sumBlue, ul, w, h);
+        result = sumUp(sumBlue, ul, w, h);
     } else {
         return 0;
     }
+    return result;
 }
 
 //same as GetSum but with the sumsq vectors
 int64_t Stats::GetSumSq(char channel, pair<int, int> ul, int w, int h) {
     //channel selection
+    int64_t result;
     if (channel == 'r') {
-        sumUp(sumsqRed, ul, w, h);
+        result = sumUp(sumsqRed, ul, w, h);
     } else if (channel == 'g') {
-        sumUp(sumsqGreen, ul, w, h);
+        result = sumUp(sumsqGreen, ul, w, h);
     } else if (channel == 'b') {
-        sumUp(sumsqBlue, ul, w, h);
+        result = sumUp(sumsqBlue, ul, w, h);
     } else {
         return 0;
     }
+    return result;
 }
 
 /**
@@ -51,10 +55,15 @@ int64_t Stats::GetSumSq(char channel, pair<int, int> ul, int w, int h) {
  * See written specification for a description of this function.
 **/
 double Stats::GetVar(pair<int, int> ul, int w, int h) {
-    //return the sum of GetSumSq from each channel
-    double rVar = varForChannel('r', ul, w, h);
-    double gVar = varForChannel('g', ul, w, h);
-    double bVar = varForChannel('b', ul, w, h);
+    double rSum = GetSum('r', ul, w, h);
+    double rSumSq = GetSumSq('r', ul, w, h);
+    double gSum = GetSum('g', ul, w, h);
+    double gSumSq = GetSumSq('g', ul, w, h);
+    double bSum = GetSum('b', ul, w, h);
+    double bSumSq = GetSumSq('b', ul, w, h);
+    double rVar = (rSumSq - ((rSum*rSum)/(w*h)));
+    double gVar = (gSumSq - ((gSum*gSum)/(w*h)));
+    double bVar = (bSumSq - ((bSum*bSum)/(w*h)));
 	return (rVar + gVar + bVar);
 }
 
@@ -62,16 +71,16 @@ double Stats::GetVar(pair<int, int> ul, int w, int h) {
 //make a new pixel using the averaged values and return it
 RGBAPixel Stats::GetAvg(pair<int, int> ul, int w, int h) {
     //set sum variables for each channel using GetSum
-    int64_t rSum = GetSum(char r, ul, w, h);
-    int64_t gSum = GetSum(char g, ul, w, h);
-    int64_t bSum = GetSum(char b, ul, w, h);
+    int64_t rSum = GetSum('r', ul, w, h);
+    int64_t gSum = GetSum('g', ul, w, h);
+    int64_t bSum = GetSum('b', ul, w, h);
     //divide each sum by w x h
     int ravg = (rSum/(w*h));
     int gavg = (gSum/(w*h));
     int bavg = (bSum/(w*h));
     //make a new pixel with the averaged channels
-    RGBAPixel avg = new RGBAPixel(ravg, gavg, bavg);
-	return avg;
+    RGBAPixel* avg = new RGBAPixel(ravg, gavg, bavg);
+	return *avg;
 }
 
 /****************************************************************
@@ -83,7 +92,7 @@ RGBAPixel Stats::GetAvg(pair<int, int> ul, int w, int h) {
 //outer represents the color channel vector being considered
 //ul is the (x, y) coordinates of the upper-left corner of the rectangle 
 //w and h are the width and height of the rectangle
-int64_t sumUp(vector<vector<int64_t>> outer, pair<int, int> ul, int w, int h) {
+int64_t Stats::sumUp(vector<vector<int64_t>> outer, pair<int, int> ul, int w, int h) {
     int x = ul.first;
     int y = ul.second;
     //the vector corresponding to the y value of the bottom of the rectangle
@@ -115,25 +124,16 @@ int64_t sumUp(vector<vector<int64_t>> outer, pair<int, int> ul, int w, int h) {
     }
 }
 
-//helper for GetVar
-//computes the variance over the whole rectangle for the given channel
-double varForChannel(char channel, pair<int, int> ul, int w, int h) {
-    double result;
-    double i = GetSum(channel, ul, w, h);
-    double Sq = GetSumSq(channel, ul, w, h);
-    return (Sq - ((i*i)/(w*h)));
-}
-
 //helper for setting up vectors that adds the next value
 //v is the vector being added to
 //x and y are the x and y coordinates/indices we're adding to
 //rgb is an rgb value being added to our vector
-//works similarly to sumUp except it adds the value to the 
+//works similarly to sumUp except it adds the value at the 
 //index instead of returning it
-void setnextSum(vector<vector<int64_t>> v, int x, int y, int rgb) {
-    //the vector corresponding to the y value of the bottom of the rectangle
+void Stats::setNextSum(vector<vector<int64_t>> v, int x, int y, int rgb) {
+    //the vector corresponding to the y value of the pixel
     vector<int64_t> ypos = v[y];
-    //if the pixel is at (0, 0), simply add rgb to the vector
+    //if the pixel is at (0, 0), simply place rgb into vector
     if ((x == 0) && (y == 0)) {
         ypos[x] = rgb;
     } else if ((x > 0) && (y == 0)) {
@@ -160,7 +160,7 @@ void setnextSum(vector<vector<int64_t>> v, int x, int y, int rgb) {
 
 //helper for setting up vectors
 //resizes the outer vector v to size h and each inner vector to size w
-void resizeVector(vector<vector<int64_t>> v, int w, int h) {
+void Stats::resizeVector(vector<vector<int64_t>> v, int w, int h) {
     //resize the outer vector to match the height of the image
     v.resize(h);
     for (int y = 0; y < h; y++) {
@@ -179,11 +179,11 @@ void Stats::setupVectors(PNG& img) {
     resizeVector(sumBlue, img.width(), img.height());
     resizeVector(sumsqRed, img.width(), img.height());
     resizeVector(sumsqGreen, img.width(), img.height());
-    resizeVector(sumSqBlue, img.width(), img.height());
+    resizeVector(sumsqBlue, img.width(), img.height());
     //loop through every pixel in the image
     for (int y = 0; y < img.height(); y++) {
         for (int x = 0; x < img.width(); x++) {
-            RGBAPixel p = img.getPixel(x, y);
+            RGBAPixel* p = img.getPixel(x, y);
             int red = p->r;
             int green = p->g;
             int blue = p->b;
@@ -193,7 +193,7 @@ void Stats::setupVectors(PNG& img) {
             setNextSum(sumBlue, x, y, blue);
             setNextSum(sumsqRed, x, y, (red*red));
             setNextSum(sumsqGreen, x, y, (green*green));
-            setNextSum(sumSqBlue, x, y, (blue*blue));
+            setNextSum(sumsqBlue, x, y, (blue*blue));
         }
     }
 }
