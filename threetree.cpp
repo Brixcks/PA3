@@ -14,9 +14,9 @@
 ThreeTree::ThreeTree(PNG& imIn, double tol) {
     //call buildtree with the stats object, imIn.width(), imIn.height(), and tol
     //ul is a new pair of 0, 0
-    Stats s = new Stats(imIn);
-    pair<int, int> p(0, 0);
-    BuildTree(s, p, imIn.width(), imIn.height(). tol);
+    Stats* s = new Stats(imIn);
+    pair<int, int> p = {0, 0};
+    BuildTree(*s, p, imIn.width(), imIn.height(), tol);
 }
 
 /**
@@ -30,7 +30,7 @@ Node* ThreeTree::BuildTree(Stats& s, pair<int, int> ul, int w, int h, double tol
     Node* curr = new Node(ul, w, h, avg, var);
     //set the new node to the root if the root hasn't already been set
     if (root == NULL) {
-        root == curr;
+        root = curr;
     }
     //check that the node is legal for splitting
     //node is illegal if it's a single pixel (1 x 1) OR var is <= tol
@@ -42,21 +42,21 @@ Node* ThreeTree::BuildTree(Stats& s, pair<int, int> ul, int w, int h, double tol
                 int ACVal = split(h);
                 //height for b
                 int BVal = (h - (2*ACVal));
-                pair<int, int> ulA(ul.first, ul.second);
-                pair<int, int> ulB(ul.first, (ul.second + ACVal));
-                pair<int, int> ulC(ul.first, (ul.second + ACVal + BVal));
+                pair<int, int> ulA = {ul.first, ul.second};
+                pair<int, int> ulB = {ul.first, (ul.second + ACVal)};
+                pair<int, int> ulC = {ul.first, (ul.second + ACVal + BVal)};
+                //Set current node's children to a recursive 
+                //call BuildTree using each child's stats
                 curr->A = BuildTree(s, ulA, w, ACVal, tol);
                 curr->B = BuildTree(s, ulB, w, BVal, tol);
                 curr->C = BuildTree(s, ulC, w, ACVal, tol);
-                //Set current node's children to a recursive 
-                //call BuildTree using each child's stats
             //dimensions are 1 x 2
             } else {
                 //Set current node's children to a recursive 
                 //call BuildTree using each child's stats
                 //with B being NULL
-                pair<int, int> ulA(ul.first, ul.second);
-                pair<int, int> ulC(ul.first, (ul.second + 1));
+                pair<int, int> ulA = {ul.first, ul.second};
+                pair<int, int> ulC = {ul.first, (ul.second + 1)};
                 //height will be 1 since height is 2
                 curr->A = BuildTree(s, ulA, w, 1, tol);
                 curr->B = NULL;
@@ -72,9 +72,9 @@ Node* ThreeTree::BuildTree(Stats& s, pair<int, int> ul, int w, int h, double tol
                 int BVal = (w - (2*ACVal));
                 //Set current node's children to a recursive 
                 //call BuildTree using each child's stats
-                pair<int, int> ulA(ul.first, ul.second);
-                pair<int, int> ulB((ul.first + ACVal), ul.second);
-                pair<int, int> ulC((ul.first + ACVal + BVal), ul.second);
+                pair<int, int> ulA = {ul.first, ul.second};
+                pair<int, int> ulB = {(ul.first + ACVal), ul.second};
+                pair<int, int> ulC = {(ul.first + ACVal + BVal), ul.second};
                 curr->A = BuildTree(s, ulA, ACVal, h, tol);
                 curr->B = BuildTree(s, ulB, BVal, h, tol);
                 curr->C = BuildTree(s, ulC, ACVal, h, tol);
@@ -83,8 +83,8 @@ Node* ThreeTree::BuildTree(Stats& s, pair<int, int> ul, int w, int h, double tol
                 //Set current node's children to a recursive 
                 //call BuildTree using each child's stats
                 //with B being NULL
-                pair<int, int> ulA(ul.first, ul.second);
-                pair<int, int> ulC((ul.first + 1), ul.second);
+                pair<int, int> ulA = {ul.first, ul.second};
+                pair<int, int> ulC = {(ul.first + 1), ul.second};
                 //width is 1 since width was 2
                 curr->A = BuildTree(s, ulA, 1, h, tol);
                 curr->B = NULL;
@@ -104,14 +104,14 @@ PNG ThreeTree::Render() const {
     unsigned int h = root->height;
     PNG out(w, h);
     Render(out, root);
-    return PNG();
+    return out;
 }
 
 /**
  * Delete allocated memory.
 **/
 void ThreeTree::Clear() {
-    clearAll();
+    clearAll(root);
 }
 
 /**
@@ -145,13 +145,7 @@ int ThreeTree::NumLeaves() const {
  * You may want a recursive helper function for this.
 **/
 void ThreeTree::RotateCW() {
-    /* Complete your implementation below */
-    //swap w and h for root
-    //run recursive for children
-        //turns wide to tall
-        //tall to wide with swapped A and C
-        //swap w and h for each node
-        //change ul for all nodes
+    rotateNodes(root, root->upleft, root->width, root->height);
 }
 
 /*****************************************************************
@@ -163,7 +157,7 @@ void ThreeTree::RotateCW() {
 //returns the split size for children A and C
 //if i = 3p/3p+1 then it will return p
 //if i = 3p + 2 then it will return p + 1
-int split(int i) {
+int ThreeTree::split(int i) {
     int a = (i % 3);
     //if the remainer is 0 or 1
     if (a < 2) {
@@ -176,14 +170,31 @@ int split(int i) {
 
 //recursive helper for rendering the tree
 //renders each leaf node by writing their average pixel value to img
-void Render(PNG& img, const Node* n) const {
-    //TODO
+void ThreeTree::Render(PNG& img, const Node* n) const {
+    if (n != NULL) {
+        //if the node is a leaf, render it to img
+        if ((n->A == NULL) && (n->B == NULL) && (n->C == NULL)) {
+            int ulx = n->upleft.first;
+            int uly = n->upleft.second;
+            for (int y = 0; y < n->height; y++) {
+                for (int x = 0; x < n->width; x++) {
+                    RGBAPixel *currPixel = img.getPixel((x + ulx), (y + uly));
+                    *currPixel = n->avg;
+                }
+            }
+        } else {
+            //render every non-null child
+            if (n->A) Render(img, n->A);
+            if (n->B) Render(img, n->B); 
+            if (n->C) Render(img, n->C); 
+        }
+    } 
 }
 
 //recursive helper for the clear function
 //deletes nodes in post-order traversal
 //through its non-null children
-void clearAll(Node* victim) {
+void ThreeTree::clearAll(Node* victim) {
     if (victim != NULL) {
         if (victim->A) clearAll(victim->A);
         if (victim->B) clearAll(victim->B);
@@ -199,7 +210,7 @@ void clearAll(Node* victim) {
 //sets the root if the root is empty
 //recursivly travels through the other tree
 //adding it's children to the current node
-void copyAll(Node* curr, Node* other) {
+void ThreeTree::copyAll(Node* curr, Node* other) {
     //set the root if it was deleted/doesn't exist
     if (other != NULL) {
         //if the curr is NULL then the root was passed after the tree was cleared
@@ -227,7 +238,7 @@ void copyAll(Node* curr, Node* other) {
 }
 
 //a recursive helper function for Size
-int Threetree::Size(const Node* n) const {
+int ThreeTree::Size(const Node* n) const {
     if (n != NULL) {
         //the sizes of the node's subtrees
         int sizeA = 0;
@@ -250,7 +261,7 @@ int Threetree::Size(const Node* n) const {
 }
 
 //recursive helper function for NumLeaves
-int Threetree::NumLeaves(const Node* n) const {
+int ThreeTree::NumLeaves(const Node* n) const {
     if (n != NULL) {
         //the number of leaves in the node's subtrees
         int leavesA = 0;
@@ -264,8 +275,8 @@ int Threetree::NumLeaves(const Node* n) const {
             if (n->A) leavesA = NumLeaves(n->A);
             if (n->B) leavesB = NumLeaves(n->B); 
             if (n->C) leavesC = NumLeaves(n->C); 
+            return (leavesA + leavesB + leavesC);
         }
-        return (leavesA + leavesB + leavesC);
     } else {
         return 0;
     }
@@ -280,6 +291,42 @@ int Threetree::NumLeaves(const Node* n) const {
 //if wide, change ul to (parent's x, node's x)
 //if the node is A (ul == parent's ul) then no change
 //if tall, swap A and C's uls and change ul to (node's x, parent's y)
-void rotateNodes(Node* n, pair<int, int> ul, int w, int h) {
-
+void ThreeTree::rotateNodes(Node* n, pair<int, int> ul, int w, int h) {
+    if (n != NULL) {
+        //use the parameters only if the node isn't the root
+        int nx = n->upleft.first;
+        int ny = n->upleft.second;
+        //the parent was tall
+        if (h > w) {
+            //change the ul unless the node has the same ul as the parent
+            if ((nx != ul.first) && (ny != ul.second)) {
+                pair<int, int> p = {nx, ul.second};
+                n->upleft = p;
+            }
+            //swap A and C's ul and positions before rotating
+            if ((n->A != NULL) && (n->C != NULL)) {
+                pair<int, int> ulA = n->A->upleft;
+                n->A->upleft = n->C->upleft;
+                n->C->upleft = ulA;
+                Node* temp = n->A;
+                n->A = n->C;
+                n->C = temp;
+            }
+        //node was wide since w >= h
+        } else {
+            //change the ul unless the node has the same ul as the parent
+            if ((nx != ul.first) && (ny != ul.second)) {
+                pair<int, int> p = {ul.first, nx};
+                n->upleft = p;
+            }
+        }
+        //swap w and h for the node
+        int temp = n->width;
+        n->width = n->height;
+        n->height = temp;
+        
+        if (n->A) rotateNodes(n->A, n->upleft, n->height, n->width);
+        if (n->B) rotateNodes(n->B, n->upleft, n->height, n->width);
+        if (n->C) rotateNodes(n->C, n->upleft, n->height, n->width);
+    }
 }
